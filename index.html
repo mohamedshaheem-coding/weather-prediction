@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEO-WEATHER // Quantum Dashboard</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-cyan: #06b6d4;
+            --accent-purple: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        /* Search Bar Components */
+        .search-box {
+            display: flex;
+            position: relative;
+            flex-grow: 1;
+            max-width: 450px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            padding-right: 4rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .search-box button {
+            position: absolute;
+            right: 6px;
+            top: 6px;
+            bottom: 6px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border: none;
+            border-radius: 50px;
+            color: white;
+            padding: 0 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s ease;
+        }
+
+        .search-box button:hover {
+            opacity: 0.9;
+        }
+
+        /* Status & Error Displays */
+        .status-msg {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+            font-weight: 500;
+        }
+
+        .status-msg.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .status-msg.loading {
+            display: block;
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            color: #99f6e4;
+        }
+
+        /* Weather UI Grid */
+        .weather-display {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 2rem;
+            opacity: 1;
+            transition: opacity 0.4s ease;
+        }
+
+        @media (max-width: 768px) {
+            .weather-display {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .main-panel {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .city-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .country-code {
+            color: var(--accent-cyan);
+            font-size: 1rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .temp-display {
+            font-size: 5rem;
+            font-weight: 800;
+            margin: 1.5rem 0;
+            background: linear-gradient(to bottom, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+        }
+
+        .temp-display::after {
+            content: '°C';
+            font-size: 2rem;
+            position: absolute;
+            top: 1rem;
+            color: var(--text-main);
+            -webkit-text-fill-color: initial;
+        }
+
+        .weather-desc {
+            font-size: 1.25rem;
+            text-transform: capitalize;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Metrics Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header>
+            <div class="logo">
+                <h1>NEO.WEATHER</h1>
+                <p>Asynchronous Quantum Forecasting</p>
+            </div>
+            <form class="search-box" id="searchForm">
+                <input type="text" id="cityInput" placeholder="Enter cyber-city (e.g., Tokyo, London)..." required autocomplete="off">
+                <button type="submit">SEEK</button>
+            </form>
+        </header>
+
+        <div id="statusMessage" class="status-msg"></div>
+
+        <main class="weather-display" id="weatherDisplay" style="display: none;">
+            <div class="main-panel">
+                <div>
+                    <h2 class="city-name" id="cityName">Neo-Tokyo</h2>
+                    <span class="country-code" id="countryCode">JP</span>
+                </div>
+                <div class="temp-display" id="temperature">24</div>
+                <div class="weather-desc" id="weatherDescription">Clear Sky</div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Atmospheric Moisture</div>
+                    <div class="metric-value" id="humidity">--%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Velocity Vector (Wind)</div>
+                    <div class="metric-value" id="windSpeed">-- km/h</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">UV Radiation Index</div>
+                    <div class="metric-value" id="uvIndex">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Apparent Kinetic Thermal</div>
+                    <div class="metric-value" id="apparentTemp">--°C</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        /**
+         * Core Weather Core API Dashboard Application Module
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchForm = document.getElementById('searchForm');
+            const cityInput = document.getElementById('cityInput');
+            const weatherDisplay = document.getElementById('weatherDisplay');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // UI Elements to map nested JSON parameters
+            const uiElements = {
+                cityName: document.getElementById('cityName'),
+                countryCode: document.getElementById('countryCode'),
+                temperature: document.getElementById('temperature'),
+                weatherDescription: document.getElementById('weatherDescription'),
+                humidity: document.getElementById('humidity'),
+                windSpeed: document.getElementById('windSpeed'),
+                uvIndex: document.getElementById('uvIndex'),
+                apparentTemp: document.getElementById('apparentTemp')
+            };
+
+            // Mapping WMO Weather Codes to Human Readable Descriptions
+            const weatherCodeMap = {
+                0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+                45: 'Foggy', 48: 'Depositing rime fog', 51: 'Light drizzle', 53: 'Moderate drizzle',
+                55: 'Dense drizzle', 61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+                71: 'Slight snow fall', 73: 'Moderate snow fall', 75: 'Heavy snow fall',
+                77: 'Snow grains', 80: 'Slight rain showers', 81: 'Moderate rain showers',
+                82: 'Violent rain showers', 85: 'Slight snow showers', 86: 'Heavy snow showers',
+                95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail'
+            };
+
+            searchForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const cityName = cityInput.value.trim();
+                if (!cityName) return;
+
+                showStatus('Initializing spatial scan for ' + cityName + '...', 'loading');
+                weatherDisplay.style.opacity = '0.3';
+
+                try {
+                    // Step 1: Resolve City String to Coordinates (Lat/Lon) via Geocoding API
+                    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json`;
+                    const geoResponse = await fetch(geoUrl);
+                    
+                    if (!geoResponse.ok) {
+                        throw new Error('Network malfunction resolving coordinate data.');
+                    }
+
+                    const geoData = await geoResponse.json();
+                    
+                    if (!geoData.results || geoData.results.length === 0) {
+                        throw new Error('Target location not found within known coordinate grids.');
+                    }
+
+                    // Extract data from nested Geocoding JSON Object
+                    const { latitude, longitude, name, country_code } = geoData.results[0];
+
+                    // Step 2: Extract Weather Matrix using Resolved Coordinates
+                    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,uv_index&timezone=auto`;
+                    const weatherResponse = await fetch(weatherUrl);
+
+                    if (!weatherResponse.ok) {
+                        throw new Error('Network failure reading environmental metrics API.');
+                    }
+
+                    const weatherData = await weatherResponse.json();
+                    
+                    // Render UI from processed nested JSON
+                    renderDashboard(name, country_code, weatherData);
+                    hideStatus();
+
+                } catch (error) {
+                    showStatus(error.message, 'error');
+                    weatherDisplay.style.display = 'none';
+                } finally {
+                    weatherDisplay.style.opacity = '1';
+                }
+            });
+
+            /**
+             * Processes nested JSON schemas to update active DOM elements
+             */
+            function renderDashboard(resolvedName, countryCode, data) {
+                // Safely extract paths from nested response format
+                const currentMetrics = data.current;
+                
+                uiElements.cityName.textContent = resolvedName;
+                uiElements.countryCode.textContent = countryCode;
+                uiElements.temperature.textContent = Math.round(currentMetrics.temperature_2m);
+                
+                // Parse nested weather condition code matrix maps
+                const code = currentMetrics.weather_code;
+                uiElements.weatherDescription.textContent = weatherCodeMap[code] || 'Unidentified Anomaly';
+
+                uiElements.humidity.textContent = `${currentMetrics.relative_humidity_2m}%`;
+                uiElements.windSpeed.textContent = `${currentMetrics.wind_speed_10m} km/h`;
+                uiElements.uvIndex.textContent = currentMetrics.uv_index;
+                uiElements.apparentTemp.textContent = `${Math.round(currentMetrics.apparent_temperature)}°C`;
+
+                // Display dynamic dashboard element smoothly
+                weatherDisplay.style.display = 'grid';
+                weatherDisplay.style.animation = 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+            }
+
+            function showStatus(msg, statusClass) {
+                statusMessage.textContent = msg;
+                statusMessage.className = `status-msg ${statusClass}`;
+            }
+
+            function hideStatus() {
+                statusMessage.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
